@@ -1,0 +1,698 @@
+(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+"use strict";
+/// <reference path="../node_modules/pxt-core/built/pxteditor.d.ts"/>
+/// <reference path="../node_modules/pxt-core/built/pxtsim.d.ts"/>
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var UF2 = pxtc.UF2;
+var wrap_1 = require("./wrap");
+var confirmAsync;
+function setConfirmAsync(cf) {
+    confirmAsync = cf;
+}
+exports.setConfirmAsync = setConfirmAsync;
+function debug() {
+    return initHidAsync()
+        .then(function (w) { return w.downloadFileAsync("/tmp/dmesg.txt", function (v) { return console.log(pxt.Util.uint8ArrayToString(v)); }); });
+}
+exports.debug = debug;
+// Web Serial API https://wicg.github.io/serial/
+// chromium bug https://bugs.chromium.org/p/chromium/issues/detail?id=884928
+// Under experimental features in Chrome Desktop 77+
+var ParityType;
+(function (ParityType) {
+    ParityType[ParityType["none"] = 0] = "none";
+    ParityType[ParityType["even"] = 1] = "even";
+    ParityType[ParityType["odd"] = 2] = "odd";
+    ParityType[ParityType["mark"] = 3] = "mark";
+    ParityType[ParityType["space"] = 4] = "space";
+})(ParityType || (ParityType = {}));
+var WebSerialPackageIO = /** @class */ (function () {
+    function WebSerialPackageIO(port, options) {
+        this.port = port;
+        this.options = options;
+        console.log("serial: new io");
+    }
+    WebSerialPackageIO.prototype.readSerialAsync = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var buffer, reader, _a, done, value, tmp;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        this._reader = this.port.readable.getReader();
+                        reader = this._reader;
+                        _b.label = 1;
+                    case 1:
+                        if (!(reader === this._reader)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this._reader.read()];
+                    case 2:
+                        _a = _b.sent(), done = _a.done, value = _a.value;
+                        if (!buffer)
+                            buffer = value;
+                        else {
+                            tmp = new Uint8Array(buffer.length + value.byteLength);
+                            tmp.set(buffer, 0);
+                            tmp.set(value, buffer.length);
+                            buffer = tmp;
+                        }
+                        if (buffer && buffer.length >= 6) {
+                            this.onData(new Uint8Array(buffer));
+                            buffer = undefined;
+                        }
+                        return [3 /*break*/, 1];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    WebSerialPackageIO.isSupported = function () {
+        return !!navigator.serial;
+    };
+    WebSerialPackageIO.mkPacketIOAsync = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var serial, requestOptions, port_1, io, options, e_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        serial = navigator.serial;
+                        if (!serial) return [3 /*break*/, 4];
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        requestOptions = {};
+                        return [4 /*yield*/, serial.requestPort(requestOptions)];
+                    case 2:
+                        port_1 = _a.sent();
+                        io = WebSerialPackageIO.portIos.filter(function (i) { return i.port == port_1; })[0];
+                        if (!io) {
+                            options = {
+                                baudrate: 460800,
+                                buffersize: 4096
+                            };
+                            io = new WebSerialPackageIO(port_1, options);
+                            WebSerialPackageIO.portIos.push(io);
+                        }
+                        return [2 /*return*/, io];
+                    case 3:
+                        e_1 = _a.sent();
+                        console.log("connection error", e_1);
+                        return [3 /*break*/, 4];
+                    case 4: throw new Error("could not open serial port");
+                }
+            });
+        });
+    };
+    WebSerialPackageIO.prototype.error = function (msg) {
+        console.error(msg);
+        throw new Error(lf("error on brick ({0})", msg));
+    };
+    WebSerialPackageIO.prototype.openAsync = function () {
+        var _this = this;
+        console.log("serial: opening port");
+        if (!!this._reader)
+            return Promise.resolve();
+        this._reader = undefined;
+        this._writer = undefined;
+        return this.port.open(this.options)
+            .then(function () {
+            _this.readSerialAsync();
+            return Promise.resolve();
+        });
+    };
+    WebSerialPackageIO.prototype.closeAsync = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                // don't close port
+                return [2 /*return*/, Promise.delay(500)];
+            });
+        });
+    };
+    WebSerialPackageIO.prototype.reconnectAsync = function () {
+        return this.openAsync();
+    };
+    WebSerialPackageIO.prototype.disconnectAsync = function () {
+        return this.closeAsync();
+    };
+    WebSerialPackageIO.prototype.sendPacketAsync = function (pkt) {
+        if (!this._writer)
+            this._writer = this.port.writable.getWriter();
+        return this._writer.write(pkt);
+    };
+    WebSerialPackageIO.portIos = [];
+    return WebSerialPackageIO;
+}());
+function hf2Async() {
+    var pktIOAsync = useWebSerial
+        ? WebSerialPackageIO.mkPacketIOAsync() : pxt.HF2.mkPacketIOAsync();
+    return pktIOAsync.then(function (h) {
+        var w = new wrap_1.Ev3Wrapper(h);
+        exports.ev3 = w;
+        return w.reconnectAsync(true)
+            .then(function () { return w; });
+    });
+}
+var useHID = false;
+var useWebSerial = false;
+function initAsync() {
+    if (pxt.U.isNodeJS) {
+        // doesn't seem to work ATM
+        useHID = false;
+    }
+    else {
+        var nodehid = /nodehid/i.test(window.location.href);
+        if (pxt.Cloud.isLocalHost() && pxt.Cloud.localToken && nodehid)
+            useHID = true;
+    }
+    if (WebSerialPackageIO.isSupported())
+        pxt.tickEvent("webserial.supported");
+    return Promise.resolve();
+}
+exports.initAsync = initAsync;
+function canUseWebSerial() {
+    return WebSerialPackageIO.isSupported();
+}
+exports.canUseWebSerial = canUseWebSerial;
+function enableWebSerialAsync() {
+    initPromise = undefined;
+    useWebSerial = WebSerialPackageIO.isSupported();
+    useHID = useWebSerial;
+    if (useWebSerial)
+        return initHidAsync().then(function () { });
+    else
+        return Promise.resolve();
+}
+exports.enableWebSerialAsync = enableWebSerialAsync;
+function cleanupAsync() {
+    if (exports.ev3) {
+        console.log('cleanup previous port');
+        return exports.ev3.disconnectAsync()
+            .catch(function (e) { })
+            .finally(function () { exports.ev3 = undefined; });
+    }
+    return Promise.resolve();
+}
+var initPromise;
+function initHidAsync() {
+    if (initPromise)
+        return initPromise;
+    if (useHID) {
+        initPromise = cleanupAsync()
+            .then(function () { return hf2Async(); })
+            .catch(function (err) {
+            console.error(err);
+            initPromise = null;
+            useHID = false;
+            useWebSerial = false;
+            return Promise.reject(err);
+        });
+    }
+    else {
+        useHID = false;
+        useWebSerial = false;
+        initPromise = Promise.reject(new Error("no HID"));
+    }
+    return initPromise;
+}
+// this comes from aux/pxt.lms
+var fspath = "../prjs/BrkProg_SAVE/";
+var rbfTemplate = "\n4c45474f580000006d000100000000001c000000000000000e000000821b038405018130813e8053\n74617274696e672e2e2e0084006080XX00448581644886488405018130813e80427965210084000a\n";
+function deployCoreAsync(resp) {
+    var filename = resp.downloadFileBaseName || "pxt";
+    filename = filename.replace(/^lego-/, "");
+    var elfPath = fspath + filename + ".elf";
+    var rbfPath = fspath + filename + ".rbf";
+    var rbfHex = rbfTemplate
+        .replace(/\s+/g, "")
+        .replace("XX", pxt.U.toHex(pxt.U.stringToUint8Array(elfPath)));
+    var rbfBIN = pxt.U.fromHex(rbfHex);
+    pxt.HF2.write16(rbfBIN, 4, rbfBIN.length);
+    var origElfUF2 = UF2.parseFile(pxt.U.stringToUint8Array(ts.pxtc.decodeBase64(resp.outfiles[pxt.outputName()])));
+    var mkFile = function (ext, data) {
+        if (data === void 0) { data = null; }
+        var f = UF2.newBlockFile();
+        f.filename = "Projects/" + filename + ext;
+        if (data)
+            UF2.writeBytes(f, 0, data);
+        return f;
+    };
+    var elfUF2 = mkFile(".elf");
+    for (var _i = 0, origElfUF2_1 = origElfUF2; _i < origElfUF2_1.length; _i++) {
+        var b = origElfUF2_1[_i];
+        UF2.writeBytes(elfUF2, b.targetAddr, b.data);
+    }
+    var r = UF2.concatFiles([elfUF2, mkFile(".rbf", rbfBIN)]);
+    var data = UF2.serializeFile(r);
+    resp.outfiles[pxtc.BINARY_UF2] = btoa(data);
+    var saveUF2Async = function () {
+        if (pxt.commands && pxt.commands.electronDeployAsync) {
+            return pxt.commands.electronDeployAsync(resp);
+        }
+        if (pxt.commands && pxt.commands.saveOnlyAsync) {
+            return pxt.commands.saveOnlyAsync(resp);
+        }
+        return Promise.resolve();
+    };
+    if (!useHID)
+        return saveUF2Async();
+    pxt.tickEvent("webserial.flash");
+    var w;
+    return initHidAsync()
+        .then(function (w_) {
+        w = w_;
+        if (w.isStreaming)
+            pxt.U.userError("please stop the program first");
+        return w.reconnectAsync(false)
+            .catch(function (e) {
+            // user easily forgets to stop robot
+            if (confirmAsync)
+                return confirmAsync({
+                    header: lf("Bluetooth download failed..."),
+                    htmlBody: "<ul>\n<li>" + lf("Make sure to stop your program or exit portview on the EV3.") + "</li>\n<li>" + lf("Check your battery level.") + "</li>\n<li>" + lf("Close EV3 LabView or other MakeCode editor tabs.") + "\n</ul>",
+                    hasCloseIcon: true,
+                    hideCancel: true,
+                    hideAgree: false,
+                    agreeLbl: lf("Try again"),
+                }).then(function () { return w.disconnectAsync(); })
+                    .then(function () { return Promise.delay(1000); })
+                    .then(function () { return w.reconnectAsync(); });
+            // nothing we can do
+            return Promise.reject(e);
+        });
+    })
+        .then(function () { return w.stopAsync(); })
+        .then(function () { return w.rmAsync(elfPath); })
+        .then(function () { return w.flashAsync(elfPath, UF2.readBytes(origElfUF2, 0, origElfUF2.length * 256)); })
+        .then(function () { return w.flashAsync(rbfPath, rbfBIN); })
+        .then(function () { return w.runAsync(rbfPath); })
+        .then(function () { return Promise.delay(500); })
+        .then(function () {
+        pxt.tickEvent("webserial.success");
+        return w.disconnectAsync();
+        //return Promise.delay(1000).then(() => w.dmesgAsync())
+    }).catch(function (e) {
+        pxt.tickEvent("webserial.fail");
+        useHID = false;
+        useWebSerial = false;
+        // if we failed to initalize, tell the user to retry
+        return Promise.reject(e);
+    });
+}
+exports.deployCoreAsync = deployCoreAsync;
+
+},{"./wrap":3}],2:[function(require,module,exports){
+"use strict";
+/// <reference path="../node_modules/pxt-core/built/pxteditor.d.ts"/>
+/// <reference path="../node_modules/pxt-core/built/pxtsim.d.ts"/>
+Object.defineProperty(exports, "__esModule", { value: true });
+var deploy_1 = require("./deploy");
+var bluetoothDialogShown = false;
+pxt.editor.initExtensionsAsync = function (opts) {
+    var projectView = opts.projectView;
+    pxt.debug('loading pxt-ev3 target extensions...');
+    function enableWebSerialAndCompileAsync() {
+        return deploy_1.enableWebSerialAsync()
+            .then(function () { return Promise.delay(500); })
+            .then(function () { return projectView.compile(); });
+    }
+    var res = {
+        deployCoreAsync: deploy_1.deployCoreAsync,
+        showUploadInstructionsAsync: function (fn, url, confirmAsync) {
+            deploy_1.setConfirmAsync(confirmAsync);
+            // https://msdn.microsoft.com/en-us/library/cc848897.aspx
+            // "For security reasons, data URIs are restricted to downloaded resources. 
+            // Data URIs cannot be used for navigation, for scripting, or to populate frame or iframe elements"
+            var downloadAgain = !pxt.BrowserUtils.isIE() && !pxt.BrowserUtils.isEdge();
+            var docUrl = pxt.appTarget.appTheme.usbDocs;
+            var htmlBody = "\n            <div class=\"ui grid stackable\">\n                <div class=\"column five wide\" style=\"background-color: #E2E2E2;\">\n                    <div class=\"ui header\">" + lf("First time here?") + "</div>\n                    <strong style=\"font-size:small\">" + lf("You must have version 1.10E or above of the firmware") + "</strong>\n                    <div style=\"justify-content: center;display: flex;padding: 1rem;\">\n                        <img class=\"ui image\" src=\"/static/download/firmware.png\" style=\"height:100px;\" />\n                    </div>\n                    <a href=\"/troubleshoot\" target=\"_blank\">" + lf("Check your firmware version here and update if needed") + "</a>\n                </div>\n                <div class=\"column eleven wide\">\n                    <div class=\"ui grid\">\n                        <div class=\"row\">\n                            <div class=\"column\">\n                                <div class=\"ui two column grid padded\">\n                                    <div class=\"column\">\n                                        <div class=\"ui\">\n                                            <div class=\"image\">\n                                                <img class=\"ui medium rounded image\" src=\"/static/download/connect.svg\" style=\"height:109px;width:261px;margin-bottom:1rem;\" />\n                                            </div>\n                                            <div class=\"content\">\n                                                <div class=\"description\">\n                                                    <span class=\"ui yellow circular label\">1</span>\n                                                    <strong>" + lf("Connect the EV3 to your computer with a USB cable") + "</strong>\n                                                    <br />\n                                                    <span style=\"font-size:small\">" + lf("Use the miniUSB port on the top of the EV3 Brick") + "</span>\n                                                </div>\n                                            </div>\n                                        </div>\n                                    </div>\n                                    <div class=\"column\">\n                                        <div class=\"ui\">\n                                            <div class=\"image\">\n                                                <img class=\"ui medium rounded image\" src=\"/static/download/transfer.svg\" style=\"height:109px;width:261px;margin-bottom:1rem;\" />\n                                            </div>\n                                            <div class=\"content\">\n                                                <div class=\"description\">\n                                                    <span class=\"ui yellow circular label\">2</span>\n                                                    <strong>" + lf("Move the .uf2 file to the EV3 Brick") + "</strong>\n                                                    <br />\n                                                    <span style=\"font-size:small\">" + lf("Locate the downloaded .uf2 file and drag it to the EV3 USB drive") + "</span>\n                                                </div>\n                                            </div>\n                                        </div>\n                                    </div>\n                                </div>\n                            </div>\n                        </div>\n                    </div>\n                </div>\n            </div>";
+            return confirmAsync({
+                header: lf("Download to your EV3"),
+                htmlBody: htmlBody,
+                hasCloseIcon: true,
+                hideCancel: true,
+                hideAgree: false,
+                agreeLbl: lf("I got it"),
+                className: 'downloaddialog',
+                buttons: [deploy_1.canUseWebSerial() ? {
+                        label: lf("Bluetooth"),
+                        icon: "bluetooth",
+                        className: "bluetooth focused",
+                        onclick: function () {
+                            pxt.tickEvent("bluetooth.enable");
+                            if (bluetoothDialogShown) {
+                                enableWebSerialAndCompileAsync().done();
+                            }
+                            else {
+                                bluetoothDialogShown = true;
+                                confirmAsync({
+                                    header: lf("Bluetooth pairing"),
+                                    hasCloseIcon: true,
+                                    hideCancel: true,
+                                    buttons: [{
+                                            label: lf("Help"),
+                                            icon: "question circle",
+                                            className: "lightgrey",
+                                            url: "/bluetooth"
+                                        }],
+                                    htmlBody: "<p>\n" + lf("You will be prompted to select a serial port.") + "\n" + (pxt.BrowserUtils.isWindows()
+                                        ? lf("Look for 'Standard Serial over Bluetooth link'.")
+                                        : lf("Loop for 'cu.EV3-SerialPort'.")) + "\n" + lf("If you have paired multiple EV3, you might have to try out multiple ports until you find the correct one.") + "\n</p>\n"
+                                }).then(function () { return enableWebSerialAndCompileAsync(); });
+                            }
+                        }
+                    } : undefined, downloadAgain ? {
+                        label: fn,
+                        icon: "download",
+                        className: "lightgrey focused",
+                        url: url,
+                        fileName: fn
+                    } : undefined, docUrl ? {
+                        label: lf("Help"),
+                        icon: "help",
+                        className: "lightgrey",
+                        url: docUrl
+                    } : undefined]
+                //timeout: 20000
+            }).then(function () { });
+        }
+    };
+    deploy_1.initAsync().catch(function (e) {
+        // probably no HID - we'll try this again upon deployment
+    });
+    return Promise.resolve(res);
+};
+// When require()d from node, bind the global pxt namespace
+// namespace pxt {
+//     export const dummyExport = 1;
+// }
+// eval("if (typeof process === 'object' && process + '' === '[object process]') pxt = global.pxt")
+
+},{"./deploy":1}],3:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * See https://www.lego.com/cdn/cs/set/assets/blt6879b00ae6951482/LEGO_MINDSTORMS_EV3_Communication_Developer_Kit.pdf
+ * https://github.com/mindboards/ev3sources/blob/master/lms2012/lms2012/source/bytecodes.h#L146
+ */
+var HF2 = pxt.HF2;
+var U = pxt.U;
+function log(msg) {
+    pxt.log("serial: " + msg);
+}
+var runTemplate = "C00882010084XX0060640301606400";
+var usbMagic = 0x3d3f;
+var DIRECT_COMMAND_NO_REPLY = 0x80;
+var Ev3Wrapper = /** @class */ (function () {
+    function Ev3Wrapper(io) {
+        var _this = this;
+        this.io = io;
+        this.msgs = new U.PromiseBuffer();
+        this.cmdSeq = U.randomUint32() & 0xffff;
+        this.lock = new U.PromiseQueue();
+        this.isStreaming = false;
+        this.dataDump = /talkdbg=1/.test(window.location.href);
+        io.onData = function (buf) {
+            buf = buf.slice(0, HF2.read16(buf, 0) + 2);
+            if (HF2.read16(buf, 4) == usbMagic) {
+                var code = HF2.read16(buf, 6);
+                var payload = buf.slice(8);
+                if (code == 1) {
+                    var str = U.uint8ArrayToString(payload);
+                    if (U.isNodeJS)
+                        pxt.debug("SERIAL: " + str.replace(/\n+$/, ""));
+                    else
+                        window.postMessage({
+                            type: 'serial',
+                            id: 'n/a',
+                            data: str
+                        }, "*");
+                }
+                else
+                    pxt.debug("Magic: " + code + ": " + U.toHex(payload));
+                return;
+            }
+            if (_this.dataDump)
+                log("RECV: " + U.toHex(buf));
+            _this.msgs.push(buf);
+        };
+    }
+    Ev3Wrapper.prototype.allocCore = function (addSize, replyType) {
+        var len = 5 + addSize;
+        var buf = new Uint8Array(len);
+        HF2.write16(buf, 0, len - 2); // pktLen
+        HF2.write16(buf, 2, this.cmdSeq++); // msgCount
+        buf[4] = replyType;
+        return buf;
+    };
+    Ev3Wrapper.prototype.allocSystem = function (addSize, cmd, replyType) {
+        if (replyType === void 0) { replyType = 1; }
+        var buf = this.allocCore(addSize + 1, replyType);
+        buf[5] = cmd;
+        return buf;
+    };
+    Ev3Wrapper.prototype.allocCustom = function (code, addSize) {
+        if (addSize === void 0) { addSize = 0; }
+        var buf = this.allocCore(1 + 2 + addSize, 0);
+        HF2.write16(buf, 4, usbMagic);
+        HF2.write16(buf, 6, code);
+        return buf;
+    };
+    Ev3Wrapper.prototype.stopAsync = function () {
+        var _this = this;
+        return this.isVmAsync()
+            .then(function (vm) {
+            if (vm)
+                return Promise.resolve();
+            log("stopping PXT app");
+            var buf = _this.allocCustom(2);
+            return _this.justSendAsync(buf)
+                .then(function () { return Promise.delay(500); });
+        });
+    };
+    Ev3Wrapper.prototype.dmesgAsync = function () {
+        log("asking for DMESG buffer over serial");
+        var buf = this.allocCustom(3);
+        return this.justSendAsync(buf);
+    };
+    Ev3Wrapper.prototype.runAsync = function (path) {
+        var codeHex = runTemplate.replace("XX", U.toHex(U.stringToUint8Array(path)));
+        var code = U.fromHex(codeHex);
+        var pkt = this.allocCore(2 + code.length, DIRECT_COMMAND_NO_REPLY);
+        HF2.write16(pkt, 5, 0x0800);
+        U.memcpy(pkt, 7, code);
+        log("run " + path);
+        return this.justSendAsync(pkt);
+    };
+    Ev3Wrapper.prototype.justSendAsync = function (buf) {
+        var _this = this;
+        return this.lock.enqueue("talk", function () {
+            _this.msgs.drain();
+            if (_this.dataDump)
+                log("SEND: " + U.toHex(buf));
+            return _this.io.sendPacketAsync(buf);
+        });
+    };
+    Ev3Wrapper.prototype.talkAsync = function (buf, altResponse) {
+        var _this = this;
+        if (altResponse === void 0) { altResponse = 0; }
+        return this.lock.enqueue("talk", function () {
+            _this.msgs.drain();
+            if (_this.dataDump)
+                log("TALK: " + U.toHex(buf));
+            return _this.io.sendPacketAsync(buf)
+                .then(function () { return _this.msgs.shiftAsync(5000); })
+                .then(function (resp) {
+                if (resp[2] != buf[2] || resp[3] != buf[3])
+                    U.userError("msg count de-sync");
+                if (buf[4] == 1) {
+                    if (altResponse != -1 && resp[5] != buf[5])
+                        U.userError("cmd de-sync");
+                    if (altResponse != -1 && resp[6] != 0 && resp[6] != altResponse)
+                        U.userError("cmd error: " + resp[6]);
+                }
+                return resp;
+            });
+        });
+    };
+    Ev3Wrapper.prototype.flashAsync = function (path, file) {
+        var _this = this;
+        log("write " + file.length + " bytes to " + path);
+        var handle = -1;
+        var loopAsync = function (pos) {
+            if (pos >= file.length)
+                return Promise.resolve();
+            var size = file.length - pos;
+            if (size > 1000)
+                size = 1000;
+            var upl = _this.allocSystem(1 + size, 0x93, 0x1);
+            upl[6] = handle;
+            U.memcpy(upl, 6 + 1, file, pos, size);
+            return _this.talkAsync(upl, 8) // 8=EOF
+                .then(function () { return loopAsync(pos + size); });
+        };
+        var begin = this.allocSystem(4 + path.length + 1, 0x92);
+        HF2.write32(begin, 6, file.length); // fileSize
+        U.memcpy(begin, 10, U.stringToUint8Array(path));
+        return this.lock.enqueue("file", function () {
+            return _this.talkAsync(begin)
+                .then(function (resp) {
+                handle = resp[7];
+                return loopAsync(0);
+            });
+        });
+    };
+    Ev3Wrapper.prototype.lsAsync = function (path) {
+        var lsReq = this.allocSystem(2 + path.length + 1, 0x99);
+        HF2.write16(lsReq, 6, 1024); // maxRead
+        U.memcpy(lsReq, 8, U.stringToUint8Array(path));
+        return this.talkAsync(lsReq, 8)
+            .then(function (resp) {
+            return U.uint8ArrayToString(resp.slice(12)).split(/\n/).map(function (s) {
+                if (!s)
+                    return null;
+                var m = /^([A-F0-9]+) ([A-F0-9]+) ([^\/]*)$/.exec(s);
+                if (m)
+                    return {
+                        md5: m[1],
+                        size: parseInt(m[2], 16),
+                        name: m[3]
+                    };
+                else
+                    return {
+                        name: s.replace(/\/$/, "")
+                    };
+            }).filter(function (v) { return !!v; });
+        });
+    };
+    Ev3Wrapper.prototype.rmAsync = function (path) {
+        log("rm " + path);
+        var rmReq = this.allocSystem(path.length + 1, 0x9c);
+        U.memcpy(rmReq, 6, U.stringToUint8Array(path));
+        return this.talkAsync(rmReq, 5)
+            .then(function (resp) { });
+    };
+    Ev3Wrapper.prototype.isVmAsync = function () {
+        var path = "/no/such/dir";
+        var mkdirReq = this.allocSystem(path.length + 1, 0x9b);
+        U.memcpy(mkdirReq, 6, U.stringToUint8Array(path));
+        return this.talkAsync(mkdirReq, -1)
+            .then(function (resp) {
+            var isVM = resp[6] == 0x05;
+            log((isVM ? "PXT app" : "VM") + " running");
+            return isVM;
+        });
+    };
+    Ev3Wrapper.prototype.streamFileOnceAsync = function (path, cb) {
+        var _this = this;
+        var fileSize = 0;
+        var filePtr = 0;
+        var handle = -1;
+        var resp = function (buf) {
+            if (buf[6] == 2) {
+                // handle not ready - file is missing
+                _this.isStreaming = false;
+                return Promise.resolve();
+            }
+            if (buf[6] != 0 && buf[6] != 8)
+                U.userError("bad response when streaming file: " + buf[6] + " " + U.toHex(buf));
+            _this.isStreaming = true;
+            fileSize = HF2.read32(buf, 7);
+            if (handle == -1) {
+                handle = buf[11];
+                log("stream on, handle=" + handle);
+            }
+            var data = buf.slice(12);
+            filePtr += data.length;
+            if (data.length > 0)
+                cb(data);
+            if (buf[6] == 8) {
+                // end of file
+                _this.isStreaming = false;
+                return _this.rmAsync(path);
+            }
+            var contFileReq = _this.allocSystem(1 + 2, 0x97);
+            HF2.write16(contFileReq, 7, 1000); // maxRead
+            contFileReq[6] = handle;
+            return Promise.delay(data.length > 0 ? 0 : 500)
+                .then(function () { return _this.talkAsync(contFileReq, -1); })
+                .then(resp);
+        };
+        var getFileReq = this.allocSystem(2 + path.length + 1, 0x96);
+        HF2.write16(getFileReq, 6, 1000); // maxRead
+        U.memcpy(getFileReq, 8, U.stringToUint8Array(path));
+        return this.talkAsync(getFileReq, -1).then(resp);
+    };
+    Ev3Wrapper.prototype.streamFileAsync = function (path, cb) {
+        var _this = this;
+        var loop = function () {
+            return _this.lock.enqueue("file", function () {
+                return _this.streamFileOnceAsync(path, cb);
+            })
+                .then(function () { return Promise.delay(500); })
+                .then(loop);
+        };
+        return loop();
+    };
+    Ev3Wrapper.prototype.downloadFileAsync = function (path, cb) {
+        var _this = this;
+        return this.lock.enqueue("file", function () {
+            return _this.streamFileOnceAsync(path, cb);
+        });
+    };
+    Ev3Wrapper.prototype.initAsync = function () {
+        return Promise.resolve();
+    };
+    Ev3Wrapper.prototype.resetState = function () {
+    };
+    Ev3Wrapper.prototype.reconnectAsync = function (first) {
+        var _this = this;
+        if (first === void 0) { first = false; }
+        this.resetState();
+        if (first)
+            return this.initAsync();
+        log("reconnect");
+        return this.io.reconnectAsync()
+            .then(function () { return _this.initAsync(); });
+    };
+    Ev3Wrapper.prototype.disconnectAsync = function () {
+        log("disconnect");
+        return this.io.disconnectAsync();
+    };
+    return Ev3Wrapper;
+}());
+exports.Ev3Wrapper = Ev3Wrapper;
+
+},{}]},{},[1,2,3]);
